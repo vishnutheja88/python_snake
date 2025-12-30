@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Snake - Web</title>
+<style>
+  body { display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#111;color:#fff;font-family:sans-serif;}
+  canvas { background:#000; image-rendering:pixelated; }
+  #score { position:absolute; top:12px; width:100%; text-align:center; font-size:18px; }
+</style>
+</head>
+<body>
+<div id="score">Score: 0</div>
+<canvas id="c" width="400" height="400"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const scale = 20;
+const cols = canvas.width / scale;
+const rows = canvas.height / scale;
+
+let snake = [{x:Math.floor(cols/2), y:Math.floor(rows/2)}];
+let dir = {x:1,y:0};
+let food = {};
+let score = 0;
+let running = true;
+const scoreEl = document.getElementById('score');
+
+function placeFood(){
+  while(true){
+    const fx = Math.floor(Math.random()*cols);
+    const fy = Math.floor(Math.random()*rows);
+    if(!snake.some(s=>s.x===fx && s.y===fy)){ food = {x:fx,y:fy}; break; }
+  }
+}
+
+function draw(){
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // draw food
+  ctx.fillStyle = 'red';
+  ctx.fillRect(food.x*scale, food.y*scale, scale, scale);
+
+  // draw snake
+  ctx.fillStyle = 'lime';
+  for(let s of snake){
+    ctx.fillRect(s.x*scale, s.y*scale, scale-1, scale-1);
+  }
+}
+
+function step(){
+  if(!running) return;
+  const head = {x: snake[0].x+dir.x, y: snake[0].y+dir.y};
+
+  // wall collision
+  if(head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows){
+    running = false; gameOver(); return;
+  }
+
+  // self-collision
+  if(snake.some(s=>s.x===head.x && s.y===head.y)){
+    running = false; gameOver(); return;
+  }
+
+  snake.unshift(head);
+
+  // food collision
+  if(head.x === food.x && head.y === food.y){
+    score++; scoreEl.textContent = 'Score: ' + score;
+    placeFood();
+  } else {
+    snake.pop();
+  }
+
+  draw();
+}
+
+function gameOver(){
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(0, canvas.height/2 - 30, canvas.width, 60);
+  ctx.fillStyle = 'white';
+  ctx.textAlign = 'center';
+  ctx.font = '20px sans-serif';
+  ctx.fillText('GAME OVER - Press Space to restart', canvas.width/2, canvas.height/2+7);
+}
+
+document.addEventListener('keydown', e=>{
+  if(e.key === 'ArrowUp' && dir.y!==1){ dir = {x:0,y:-1}; }
+  if(e.key === 'ArrowDown' && dir.y!==-1){ dir = {x:0,y:1}; }
+  if(e.key === 'ArrowLeft' && dir.x!==1){ dir = {x:-1,y:0}; }
+  if(e.key === 'ArrowRight' && dir.x!==-1){ dir = {x:1,y:0}; }
+  if(e.code === 'Space' && !running){
+    // restart
+    snake = [{x:Math.floor(cols/2), y:Math.floor(rows/2)}];
+    dir = {x:1,y:0}; score = 0; scoreEl.textContent = 'Score: 0'; running = true; placeFood();
+  }
+});
+
+placeFood();
+draw();
+setInterval(step, 100);
+</script>
+</body>
+</html>
